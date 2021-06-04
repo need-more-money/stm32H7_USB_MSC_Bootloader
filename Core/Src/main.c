@@ -94,6 +94,7 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
 //  image_chk();
+  sfud_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */

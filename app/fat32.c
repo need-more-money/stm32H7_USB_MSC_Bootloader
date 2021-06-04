@@ -109,7 +109,7 @@ typedef struct
     uint32_t end;
 }fat32_range_t;
 
-#define FAT32_DIR_ENTRY_ADDR         0x00400000
+
 
 //static fat32_range_t fw_addr_range = {0x00400600, (0x00400600 + APP_SIZE)};
 static fat32_range_t fw_addr_range = {0, 0};
@@ -117,6 +117,13 @@ static fat32_range_t fw_addr_range = {0, 0};
 //-------------------------------------------------------
 
 #define FAT32_MBR_HARDCODE  0u
+#define FAT32_BPB_RsvdSecCnt	(16)	// 保留扇区数
+#define FAT32_BPB_FATSz32		(2560)	// FAT表扇区数
+#define FAT32_FAT1_ADDRESS	(FAT32_BPB_RsvdSecCnt * FAT32_SECTOR_SIZE)
+#define FAT32_FAT2_ADDRESS	(FAT32_FAT1_ADDRESS + (FAT32_BPB_FATSz32 * FAT32_SECTOR_SIZE))
+
+#define FAT32_DIR_ENTRY_ADDR         (FAT32_FAT2_ADDRESS + (FAT32_BPB_FATSz32 * FAT32_SECTOR_SIZE))
+#define FILE_README_ADDR	(FAT32_DIR_ENTRY_ADDR + 3*FAT32_SECTOR_SIZE)
 
 #if (FAT32_MBR_HARDCODE > 0u)
 static const uint8_t FAT32_MBR_DATA0[] = {
@@ -144,9 +151,9 @@ static void _fat32_read_bpb(uint8_t *b)
     bpb->BS_jmpBoot[1] = 0xFE;
     bpb->BS_jmpBoot[2] = 0x90;
     memcpy(bpb->BS_OEMName, "MSDOS5.0", 8);
-    bpb->BPB_BytsPerSec = 512;  // 00 02
+    bpb->BPB_BytsPerSec = FAT32_SECTOR_SIZE;  // 00 02
     bpb->BPB_SecPerClus = 1;
-    bpb->BPB_RsvdSecCnt = 0x117C;   //2238KB
+    bpb->BPB_RsvdSecCnt = FAT32_BPB_RsvdSecCnt;//0x117C;   //2238KB
     bpb->BPB_NumFATs = 2;
     //bpb->BPB_RootEntCnt = 0x0000;
     //bpb->BPB_TotSec16 = 0x0000;
@@ -155,10 +162,10 @@ static void _fat32_read_bpb(uint8_t *b)
     bpb->BPB_SecPerTrk = 0x003F;
     bpb->BPB_NumHeads = 0x00FF;
     bpb->BPB_HiddSec = 0x0000003F;
-    bpb->BPB_TotSec32 = 0x00020000 + 0x2000 + 0x806;     //120MB
+    bpb->BPB_TotSec32 = 0x0001000 + FAT32_BPB_FATSz32 + FAT32_BPB_FATSz32 + FAT32_BPB_RsvdSecCnt + 0x81;     //120MB
     
     // FAT32 Structure
-    bpb->BPB_FATSz32 = 0x00000742;
+    bpb->BPB_FATSz32 = FAT32_BPB_FATSz32;
     bpb->BPB_ExtFlags = 0x0000;
     bpb->BPB_FSVer = 0x0000;
     bpb->BPB_RootClus = 0x00000002;
@@ -184,8 +191,8 @@ static void _fat32_read_fsinfo(uint8_t *b)
     memset(b, 0, FAT32_SECTOR_SIZE);
     fsinfo->FSI_LeadSig = 0x41615252;
     fsinfo->FSI_StrucSig = 0x61417272;
-    fsinfo->FSI_Free_Count = 0x000398BE; //0xFFFFFFFF;
-    fsinfo->FSI_Nxt_Free = 0x00000805;
+    fsinfo->FSI_Free_Count = 0x000198BE; //0xFFFFFFFF;
+    fsinfo->FSI_Nxt_Free = (FILE_README_ADDR/FAT32_SECTOR_SIZE)+2;
     b[510] = 0x55;
     b[511] = 0xAA;
 }
@@ -207,11 +214,11 @@ static void _fat32_read_fsinfo2(uint8_t *b)
 // Addr: 0x0031_7C00 - 0x0031_9C14
 static void _fat32_read_fat_table(uint8_t *b, uint32_t addr)
 {
-    uint32_t s_offset = (addr - 0x22F800) >> 2;
+    uint32_t s_offset = (addr - FAT32_FAT1_ADDRESS) >> 2;
     uint32_t *b32 = (uint32_t*)b;
     uint32_t i;
     
-    if(addr == 0x22F800)    // FAT table start
+    if(addr == FAT32_FAT1_ADDRESS)    // FAT table start
     {
         // 1MB
         b32[0] = 0x0FFFFFF8;
@@ -225,23 +232,18 @@ static void _fat32_read_fat_table(uint8_t *b, uint32_t addr)
             b32[i] = s_offset + i +1;
         }
     }
-    else if(addr == 0x231800)    // FAT table end
-    {
-        for(i=0; i<4; i++)
-        {
-            b32[i] = s_offset + i +1;
-        }
-        b32[4] = 0x0FFFFFFF;
-        for(i=5; i<128; i++)
-        {
-            b32[i] = 0x00000000;
-        }
-    }
+//    else if(addr == FAT32_FAT1_ADDRESS+0x2000)    // FAT table end
+//    {
+//        for(i=0; i<128; i++)
+//        {
+//            b32[i] = 0x00000000;
+//        }
+//    }
     else
     {
         for(i=0; i<128; i++)
         {
-            b32[i] = s_offset + i +1;
+            b32[i] = 0x00000000;//s_offset + i +1;
         }
     }
 }
@@ -371,8 +373,8 @@ bool fat32_read(uint8_t *b, uint32_t addr)
         _fat32_read_fsinfo2(b);
     }
     // BPB_RsvdSecCnt * 512 -> 17*512
-    else if((addr >= 0x22F800 && addr < 0x231A00) || (addr >= 0x317C00&& addr < 0x319E00))
-//    else if((addr >= 0x4000 && addr < 0x6200) || (addr >= 0x317C00&& addr < 0x319E00))
+//    else if((addr >= 0x22F800 && addr < 0x231A00) || (addr >= 0x317C00&& addr < 0x319E00))
+    else if((addr >= FAT32_FAT1_ADDRESS && addr < FAT32_FAT1_ADDRESS+0x2800) || (addr >= FAT32_FAT2_ADDRESS && addr < FAT32_FAT2_ADDRESS+0x2800))
     {
         _fat32_read_fat_table(b, addr);
     }
@@ -380,7 +382,7 @@ bool fat32_read(uint8_t *b, uint32_t addr)
     {
         _fat32_read_dir_entry(b);
     }
-    else if(addr == 0x00400600)
+    else if(addr == FILE_README_ADDR)
     {
     	_fat32_read_readme(b, addr);
     }
@@ -417,7 +419,7 @@ bool fat32_write(const uint8_t *b, uint32_t addr)
             {
                 uint32_t clus = (((uint32_t)(entry->DIR_FstClusHI)) << 16) | entry->DIR_FstClusLO;
               
-                fw_addr_range.begin = ((clus-2) + 0x2000 ) * FAT32_SECTOR_SIZE;
+                fw_addr_range.begin = ((clus-2) + (FAT32_BPB_RsvdSecCnt + FAT32_BPB_FATSz32*2 ) ) * FAT32_SECTOR_SIZE;
                 fw_addr_range.end = fw_addr_range.begin + MIN(entry->DIR_FileSize, APP_SIZE);
             }
         }

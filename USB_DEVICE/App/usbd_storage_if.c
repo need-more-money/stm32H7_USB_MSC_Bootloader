@@ -23,6 +23,7 @@
 #include "usbd_storage_if.h"
 
 /* USER CODE BEGIN INCLUDE */
+#include "sfud.h"
 #include "../../../app/fat32.h"
 /* USER CODE END INCLUDE */
 
@@ -210,37 +211,7 @@ USBD_StorageTypeDef USBD_Storage_Interface_fops_HS =
 int8_t STORAGE_Init_HS(uint8_t lun)
 {
   /* USER CODE BEGIN 9 */
-//	Mass_Block_Count = 252*1024/SECTOR_SIZE;
-//	Mass_Block_Size =  SECTOR_SIZE;
-//	Mass_Memory_Size = 252*1024;
 
-//	memcpy(RAM_DISK, FAT_DBR_TABLE, sizeof(FAT_DBR_TABLE));
-//	memcpy(RAM_DISK, FAT16_BootSector, FATBootSize);
-
-//	for(int i=0;i<sizeof(FAT_DBR_TABLE);i++)//重建FAT表
-//	{
-//		RAM_DISK[i]=FAT_DBR_TABLE[i];
-//	}
-//
-//	RAM_DISK[0x800]=0xF8;
-//	RAM_DISK[0x801]=0xFF;
-//	RAM_DISK[0x802]=0xFF;
-//	RAM_DISK[0x803]=0x03;
-//	RAM_DISK[0x804]=0x40;
-//	RAM_DISK[0x805]=0x00;
-//	RAM_DISK[0x806]=0x05;
-//	RAM_DISK[0x807]=0xF0;
-//	RAM_DISK[0x808]=0xFF;
-//
-//	RAM_DISK[0xC00]=0xF8;
-//	RAM_DISK[0xC01]=0xFF;
-//	RAM_DISK[0xC02]=0xFF;
-//	RAM_DISK[0xC03]=0x03;
-//	RAM_DISK[0xC04]=0x40;
-//	RAM_DISK[0xC05]=0x00;
-//	RAM_DISK[0xC06]=0x05;
-//	RAM_DISK[0xC07]=0xF0;
-//	RAM_DISK[0xC08]=0xFF;
 
 	return (USBD_OK);
   /* USER CODE END 9 */

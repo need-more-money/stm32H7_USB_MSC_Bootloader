@@ -115,8 +115,8 @@ const int8_t STORAGE_Inquirydata_HS[] = {/* 36 */
 /* USER CODE END INQUIRY_DATA_HS */
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
-#define RAMDISK_SIZE    32*1024  /* 放FAT表*/
-#define SECTOR_SIZE     512     /* 一包数据大小，boot是以512位单位分包*/
+#define RAMDISK_SIZE    32*1024  /* 放FAT�?*/
+#define SECTOR_SIZE     512     /* �?包数据大小，boot是以512位单位分�?*/
 #define FATBootSize      62
 
 uint32_t Mass_Memory_Size;

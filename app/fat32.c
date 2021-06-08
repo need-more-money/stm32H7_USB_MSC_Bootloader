@@ -103,16 +103,22 @@ typedef struct __attribute__((packed))
 
 //-------------------------------------------------------
 
+enum{
+	FW_TYPE_BIN = 1,
+	FW_TYPE_DATA = 2,
+};
+
 typedef struct
 {
     uint32_t begin;
     uint32_t end;
+    uint32_t type;
 }fat32_range_t;
 
 
 
 //static fat32_range_t fw_addr_range = {0x00400600, (0x00400600 + APP_SIZE)};
-static fat32_range_t fw_addr_range = {0, 0};
+static fat32_range_t image_addr_range = {0, 0};
 
 //-------------------------------------------------------
 
@@ -270,7 +276,7 @@ static void _fat32_read_dir_entry(uint8_t *b)
     
     ++dir;
     
-    memcpy(dir->DIR_Name, "README  TXT", 11);
+    memcpy(dir->DIR_Name, "VERSION TXT", 11);
     dir->DIR_Attr = FAT32_ATTR_ARCHIVE;
     dir->DIR_NTRes = 0x18;
     dir->DIR_CrtTimeTenth = 0x00;
@@ -298,16 +304,18 @@ static bool _fat32_write_firmware(const uint8_t *b, uint32_t addr)
 //
 //    HAL_FLASH_Unlock();
     
-    uint32_t offset = addr - fw_addr_range.begin;
+    uint32_t offset = addr - image_addr_range.begin;
     uint32_t phy_addr = APP_ADDR + offset;
-    uint32_t prog_size = MIN(FAT32_SECTOR_SIZE, fw_addr_range.end - fw_addr_range.begin);
+    uint32_t prog_size = MIN(FAT32_SECTOR_SIZE, image_addr_range.end - image_addr_range.begin);
   
+//    printf("offset:%d\n",offset);
+
     if(prog_size & 0x03)
     {
         prog_size += 4;
     }
   
-    if(addr == fw_addr_range.begin)
+    if(addr == image_addr_range.begin)
     {
         // Erase the APPCODE area
         uint32_t PageError = 0;
@@ -401,7 +409,7 @@ bool fat32_write(const uint8_t *b, uint32_t addr)
         return false;
     }
     
-    uint32_t align_addr_end = (fw_addr_range.end & ~(FAT32_SECTOR_SIZE-1)) + ((fw_addr_range.end & (FAT32_SECTOR_SIZE-1)) ? FAT32_SECTOR_SIZE : 0);
+    uint32_t align_addr_end = (image_addr_range.end & ~(FAT32_SECTOR_SIZE-1)) + ((image_addr_range.end & (FAT32_SECTOR_SIZE-1)) ? FAT32_SECTOR_SIZE : 0);
     
     if(addr < FAT32_DIR_ENTRY_ADDR)
     {
@@ -414,17 +422,26 @@ bool fat32_write(const uint8_t *b, uint32_t addr)
         {
             const uint8_t *b_offset = (const uint8_t *)(b + i);
             fat32_dir_entry_t *entry = (fat32_dir_entry_t*)b_offset;
+            uint32_t clus = (((uint32_t)(entry->DIR_FstClusHI)) << 16) | entry->DIR_FstClusLO;
              
-            if(memcmp((void*) &entry->DIR_Name[8], "BIN", 3) == 0)
-            {
-                uint32_t clus = (((uint32_t)(entry->DIR_FstClusHI)) << 16) | entry->DIR_FstClusLO;
-              
-                fw_addr_range.begin = ((clus-2) + (FAT32_BPB_RsvdSecCnt + FAT32_BPB_FATSz32*2 ) ) * FAT32_SECTOR_SIZE;
-                fw_addr_range.end = fw_addr_range.begin + MIN(entry->DIR_FileSize, APP_SIZE);
+            if(!memcmp((void*) &entry->DIR_Name[8], "BIN", 3) || !memcmp((void*) &entry->DIR_Name[0], "FIRMWAREBIN", 11)){
+
+            	image_addr_range.begin = ((clus-2) + (FAT32_BPB_RsvdSecCnt + FAT32_BPB_FATSz32*2 ) ) * FAT32_SECTOR_SIZE;
+            	image_addr_range.end = image_addr_range.begin + MIN(entry->DIR_FileSize, APP_SIZE);
+
+            	image_addr_range.type = FW_TYPE_BIN;
+            	printf("FIRMWARE [%.11s] -> %08X\n",entry->DIR_Name,image_addr_range.begin);
+            }else if(!memcmp((void*) &entry->DIR_Name[8], "DAT", 3)){
+            	image_addr_range.begin = ((clus-2) + (FAT32_BPB_RsvdSecCnt + FAT32_BPB_FATSz32*2 ) ) * FAT32_SECTOR_SIZE;
+            	image_addr_range.end = image_addr_range.begin + MIN(entry->DIR_FileSize, APP_SIZE);
+
+            	image_addr_range.type = FW_TYPE_DATA;
+            	printf("DATA [%.11s] -> %08X\n",entry->DIR_Name,image_addr_range.begin);
             }
+
         }
     }
-    else if(addr >= fw_addr_range.begin && addr < align_addr_end)
+    else if(addr >= image_addr_range.begin && addr < align_addr_end)
     {
         if(!_fat32_write_firmware(b, addr))
         {
@@ -446,8 +463,8 @@ bool fat32_init(void)
         return false;
     }
 
-    fw_addr_range.begin = 0x00400600;
-    fw_addr_range.end = 0x00400600 + APP_SIZE;
+    image_addr_range.begin = 0x292200;
+    image_addr_range.end = 0x292200 + APP_SIZE;
 
     return true;
 }

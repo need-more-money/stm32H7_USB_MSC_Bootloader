@@ -31,7 +31,7 @@ typedef struct{
 }file_header_t;
 
 mbedtls_sha256_context sha256;
-file_header_t *image_header;
+
 //
 //void flash_erase_all(void)
 //{
@@ -97,8 +97,7 @@ static void QSPI_EnableMapped(void)
 static void QSPI_DisableMapped(void)
 {
     hqspi.Instance->CR |= QUADSPI_CR_ABORT_Msk;
-    while ((hqspi.Instance->SR & QUADSPI_SR_BUSY_Msk) != 0)
-        ;
+    while ((hqspi.Instance->SR & QUADSPI_SR_BUSY_Msk) != 0);
     hqspi.Instance->CCR &= ~QUADSPI_CCR_FMODE_Msk;
     HAL_QSPI_DeInit(&hqspi);
     HAL_QSPI_Init(&hqspi);
@@ -108,15 +107,20 @@ static void QSPI_DisableMapped(void)
 void *isImageBootable(void)
 {
 	uint8_t sha256_hash[32];
+	file_header_t *image_header = NULL;
 
 	QSPI_EnableMapped();
+
 	image_header = (void *)0x90000000;
 	if(image_header->magic == 0x77478507){
 
 		mbedtls_sha256_ret((void *)image_header->exec_addr, image_header->image_size, sha256_hash, 0);
 
 		if(!memcmp(sha256_hash, image_header->sign, sizeof(sha256_hash))){
-			return (void *)image_header->exec_addr;
+			if(image_header->exec_addr)
+				return (void *)image_header->exec_addr;
+			else
+				return (void *)(((uint32_t)image_header)+sizeof(file_header_t));
 		}
 
 	}

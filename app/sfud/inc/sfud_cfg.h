@@ -31,7 +31,7 @@
 
 //#define SFUD_DEBUG_MODE
 
-#define SFUD_USING_SFDP
+//#define SFUD_USING_SFDP
 
 #define SFUD_USING_FLASH_INFO_TABLE
 

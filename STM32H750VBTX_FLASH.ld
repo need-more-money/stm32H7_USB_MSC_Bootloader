@@ -33,7 +33,7 @@ ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
 _estack = ORIGIN(RAM_D1) + LENGTH(RAM_D1);	/* end of "RAM_D1" Ram type memory */
-
+__m_text_start = ORIGIN(FLASH);
 _Min_Heap_Size = 0x200 ;	/* required amount of heap  */
 _Min_Stack_Size = 0x400 ;	/* required amount of stack */
 
@@ -54,8 +54,8 @@ SECTIONS
   /* The startup code into "FLASH" Rom type memory */
   .isr_vector :
   {
+  	_image_start = .;
     . = ALIGN(4);
-    _image_start = .;
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);
   } >FLASH
@@ -129,10 +129,9 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH
 
+  __m_text_size = . - ORIGIN(FLASH);
   /* Used by the startup to initialize data */
   _sidata = LOADADDR(.data);
-  _data_size = _edata - _sdata;
-  _image_end = . + _data_size;
 
   /* Initialized data sections into "RAM_D1" Ram type memory */
   .data : 
@@ -146,6 +145,8 @@ SECTIONS
     _edata = .;        /* define a global symbol at data end */
     
   } >RAM_D1 AT> FLASH
+  
+  __m_data_size = SIZEOF(.data);
   
   /* Uninitialized data section into "RAM_D1" Ram type memory */
   . = ALIGN(4);

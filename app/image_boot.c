@@ -6,16 +6,6 @@
  */
 #include "main.h"
 
-typedef union{
-	struct{
-		uint32_t magic;
-		uint32_t imageSize;
-		char imageName[64];
-		uint8_t sign[256];
-	};
-	uint8_t bytes[1024];
-}img_header_t;
-
 void boot(uint32_t imgStart)
 {
 //	img_header_t *h = (void *)imgStart;

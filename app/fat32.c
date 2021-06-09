@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "main.h"
 #include "btldr_config.h"
 #include "fat32.h"
+#include "sfud.h"
 
 //-------------------------------------------------------
 
@@ -119,7 +120,7 @@ typedef struct
 
 //static fat32_range_t fw_addr_range = {0x00400600, (0x00400600 + APP_SIZE)};
 static fat32_range_t image_addr_range = {0, 0};
-
+static const sfud_flash *flash;
 //-------------------------------------------------------
 
 #define FAT32_MBR_HARDCODE  0u
@@ -430,13 +431,16 @@ bool fat32_write(const uint8_t *b, uint32_t addr)
             	image_addr_range.end = image_addr_range.begin + MIN(entry->DIR_FileSize, APP_SIZE);
 
             	image_addr_range.type = FW_TYPE_BIN;
-            	printf("FIRMWARE [%.11s] -> %08X\n",entry->DIR_Name,image_addr_range.begin);
+//            	printf("FIRMWARE [%.11s] -> %08X\n",entry->DIR_Name,image_addr_range.begin);
             }else if(!memcmp((void*) &entry->DIR_Name[8], "DAT", 3)){
             	image_addr_range.begin = ((clus-2) + (FAT32_BPB_RsvdSecCnt + FAT32_BPB_FATSz32*2 ) ) * FAT32_SECTOR_SIZE;
             	image_addr_range.end = image_addr_range.begin + MIN(entry->DIR_FileSize, APP_SIZE);
 
             	image_addr_range.type = FW_TYPE_DATA;
-            	printf("DATA [%.11s] -> %08X\n",entry->DIR_Name,image_addr_range.begin);
+//            	printf("DATA [%.11s] -> %08X\n",entry->DIR_Name,image_addr_range.begin);
+            }else if(!memcmp((void*) &entry->DIR_Name[0], "ERASEALL   ", 11)){
+//            	image_addr_range.begin = ((clus-2) + (FAT32_BPB_RsvdSecCnt + FAT32_BPB_FATSz32*2 ) ) * FAT32_SECTOR_SIZE;
+//            	printf("ERASE ALL DATA -> %08X\n",i);
             }
 
         }
@@ -458,13 +462,13 @@ bool fat32_write(const uint8_t *b, uint32_t addr)
 
 bool fat32_init(void)
 {
-    if (DEV_FLASH_SIZE == 0)
-    {
-        return false;
-    }
 
     image_addr_range.begin = 0x292200;
     image_addr_range.end = 0x292200 + APP_SIZE;
+
+	if(sfud_init() == SFUD_SUCCESS){
+		flash = sfud_get_device_table();
+	}
 
     return true;
 }

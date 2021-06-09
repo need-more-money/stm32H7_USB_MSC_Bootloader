@@ -19,8 +19,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "mbedtls.h"
 #include "quadspi.h"
-#include "usb_device.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -51,7 +51,7 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-int image_chk(void);
+void doBoot(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -91,10 +91,10 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_QUADSPI_Init();
-  MX_USB_DEVICE_Init();
+  MX_MBEDTLS_Init();
   /* USER CODE BEGIN 2 */
-//  image_chk();
-  sfud_init();
+  doBoot();
+//  sfud_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */

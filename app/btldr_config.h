@@ -13,18 +13,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef _BTLDR_CONFIG_H_
 #define _BTLDR_CONFIG_H_
 
-#define DEV_CODE_ADDR           FLASH_BASE
-#define DEV_FLASH_SIZE          FLASH_SIZE
-#define DEV_ERASE_PAGE_SIZE     FLASH_PAGE_SIZE
-
-#define APP_ADDR                (DEV_CODE_ADDR + APP_OFFSET)
-#define APP_SIZE                (DEV_FLASH_SIZE - APP_OFFSET)
+#define APP_ADDR                (0x90000000)
+#define APP_SIZE                (4*1024*1024)
 
 #define CONFIG_READ_FLASH       1U
-
-
-#define APP_OFFSET							0x5000			//bootloader size (byte)
-
 
 
 #endif

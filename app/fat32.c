@@ -120,7 +120,7 @@ typedef struct
 
 //static fat32_range_t fw_addr_range = {0x00400600, (0x00400600 + APP_SIZE)};
 static fat32_range_t image_addr_range = {0, 0};
-static const sfud_flash *flash;
+static const sfud_flash *flash = NULL;
 //-------------------------------------------------------
 
 #define FAT32_MBR_HARDCODE  0u
@@ -169,7 +169,12 @@ static void _fat32_read_bpb(uint8_t *b)
     bpb->BPB_SecPerTrk = 0x003F;
     bpb->BPB_NumHeads = 0x00FF;
     bpb->BPB_HiddSec = 0x0000003F;
-    bpb->BPB_TotSec32 = 0x0001000 + FAT32_BPB_FATSz32 + FAT32_BPB_FATSz32 + FAT32_BPB_RsvdSecCnt + 0x81;     //120MB
+    bpb->BPB_TotSec32 = FAT32_BPB_FATSz32 + FAT32_BPB_FATSz32 + FAT32_BPB_RsvdSecCnt + 0x81;     //120MB
+    if(flash){
+    	bpb->BPB_TotSec32 += (flash->chip.capacity/FAT32_SECTOR_SIZE);
+    }else{
+    	bpb->BPB_TotSec32 += 0x0001000;
+    }
     
     // FAT32 Structure
     bpb->BPB_FATSz32 = FAT32_BPB_FATSz32;
@@ -301,60 +306,24 @@ static bool _fat32_write_firmware(const uint8_t *b, uint32_t addr)
 {
     bool return_status = true;
   
-    HAL_StatusTypeDef status;
-//
-//    HAL_FLASH_Unlock();
+    HAL_StatusTypeDef status = HAL_OK;
     
     uint32_t offset = addr - image_addr_range.begin;
     uint32_t phy_addr = APP_ADDR + offset;
     uint32_t prog_size = MIN(FAT32_SECTOR_SIZE, image_addr_range.end - image_addr_range.begin);
   
-//    printf("offset:%d\n",offset);
-
-    if(prog_size & 0x03)
-    {
-        prog_size += 4;
-    }
-  
     if(addr == image_addr_range.begin)
     {
-        // Erase the APPCODE area
-        uint32_t PageError = 0;
-
         // TODO erase flash
-        
-        if(status != HAL_OK)
-        {
-            return_status = false;
-            goto EXIT;
-        }
     }
     
     
-    if((phy_addr >= APP_ADDR) && (phy_addr < (APP_ADDR + APP_SIZE)) )
-    {
-        uint32_t i = 0;
-      
-        for(i=0; i<prog_size; i+=8)
-        {
-            const uint8_t *wbuf = b + i;            
-			// TODO program flash page
-//						status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, phy_addr + i, *((uint64_t*)wbuf));	//lingex
-            if(status != HAL_OK)
-            {
-                return_status = false;
-                goto EXIT;
-            }
-        }
+    if((phy_addr >= APP_ADDR) && (phy_addr < (APP_ADDR + APP_SIZE))){
+    	if(flash){
+    		sfud_write(flash, phy_addr, prog_size, b);
+    	}
     }
     
-    //if(addr == (fw_addr_range.end - FAT32_SECTOR_SIZE))
-    //{
-      // DownloadComplete();
-    //  return_status = true;
-    //}
-EXIT:
-//    HAL_FLASH_Lock();
     return return_status;
 }
 
@@ -441,6 +410,7 @@ bool fat32_write(const uint8_t *b, uint32_t addr)
             }else if(!memcmp((void*) &entry->DIR_Name[0], "ERASEALL   ", 11)){
 //            	image_addr_range.begin = ((clus-2) + (FAT32_BPB_RsvdSecCnt + FAT32_BPB_FATSz32*2 ) ) * FAT32_SECTOR_SIZE;
 //            	printf("ERASE ALL DATA -> %08X\n",i);
+            	flash?sfud_chip_erase(flash):0;
             }
 
         }

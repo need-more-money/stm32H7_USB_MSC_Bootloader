@@ -7,6 +7,7 @@
 #include <string.h>
 #include "main.h"
 #include "quadspi.h"
+#include "usb_device.h"
 #include "mbedtls/sha256.h"
 //#include "mbedtls/pk.h"
 //#include "mbedtls/rsa.h"
@@ -71,13 +72,14 @@ static void QSPI_EnableMapped(void)
 	QSPI_MemoryMappedTypeDef s_mem_mapped_cfg;
 
 	/* Configure the command for the read instruction */
-	s_command.InstructionMode = QSPI_INSTRUCTION_4_LINES;
+	s_command.InstructionMode = QSPI_INSTRUCTION_1_LINE;
 	s_command.Instruction = 0xEB;
 	s_command.AddressMode = QSPI_ADDRESS_4_LINES;
 	s_command.AddressSize = QSPI_ADDRESS_24_BITS;
-	s_command.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+	s_command.AlternateByteMode = QSPI_ALTERNATE_BYTES_4_LINES;
+	s_command.AlternateBytesSize = QSPI_ALTERNATE_BYTES_8_BITS;
 	s_command.DataMode = QSPI_DATA_4_LINES;
-	s_command.DummyCycles = 8;
+	s_command.DummyCycles = 4;
 	s_command.DdrMode = QSPI_DDR_MODE_DISABLE;
 	s_command.DdrHoldHalfCycle = QSPI_DDR_HHC_ANALOG_DELAY;
 	s_command.SIOOMode = QSPI_SIOO_INST_EVERY_CMD;
@@ -131,8 +133,8 @@ void doBoot(void)
 		void *start = isImageBootable();
 		if(start != (void *)-1){
 			boot((uint32_t)start);
-		}else{
-			MX_USB_DEVICE_Init();
 		}
+
+		MX_USB_DEVICE_Init();
 	}
 }

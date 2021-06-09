@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define _BTLDR_CONFIG_H_
 
 #define APP_ADDR                (0x90000000)
-#define APP_SIZE                (4*1024*1024)
+#define APP_SIZE                ((flash)?(flash->chip.capacity):(2*1024*1024))
 
 #define CONFIG_READ_FLASH       1U
 

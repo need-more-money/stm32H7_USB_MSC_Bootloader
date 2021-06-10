@@ -174,7 +174,7 @@ sfud_err sfud_spi_port_init(sfud_flash *flash) {
     sfud_err result = SFUD_SUCCESS;
 
     flash->spi.wr = spi_write_read;
-    flash->spi.qspi_read = qspi_read;
+//    flash->spi.qspi_read = qspi_read;
     flash->retry.delay = retry_delay;
     /* adout 60 seconds timeout */
     flash->retry.times = 10000*60;
@@ -197,12 +197,12 @@ void sfud_log_debug(const char *file, const long line, const char *format, ...) 
     (void)file;
     (void)line;
     /* args point to the first variable parameter */
-    va_start(args, format);
-    printf("[SFUD] ");
-    /* must use vprintf to print */
-    vsnprintf(log_buf, sizeof(log_buf), format, args);
-    printf("%s\n", log_buf);
-    va_end(args);
+//    va_start(args, format);
+//    printf("[SFUD] ");
+//    /* must use vprintf to print */
+//    vsnprintf(log_buf, sizeof(log_buf), format, args);
+//    printf("%s\n", log_buf);
+//    va_end(args);
 }
 
 /**
@@ -215,12 +215,12 @@ void sfud_log_info(const char *format, ...) {
     va_list args;
 
     /* args point to the first variable parameter */
-    va_start(args, format);
-    printf("[SFUD]");
-    /* must use vprintf to print */
-    vsnprintf(log_buf, sizeof(log_buf), format, args);
-    printf("%s\n", log_buf);
-    va_end(args);
+//    va_start(args, format);
+//    printf("[SFUD]");
+//    /* must use vprintf to print */
+//    vsnprintf(log_buf, sizeof(log_buf), format, args);
+//    printf("%s\n", log_buf);
+//    va_end(args);
 }
 
 sfud_err qspi_send_then_recv(const void *send_buf, size_t send_length, void *recv_buf, size_t recv_length)

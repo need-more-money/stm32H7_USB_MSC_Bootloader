@@ -320,7 +320,12 @@ static bool _fat32_write_firmware(const uint8_t *b, uint32_t addr)
     
     if((phy_addr >= APP_ADDR) && (phy_addr < (APP_ADDR + APP_SIZE))){
     	if(flash){
-    		sfud_write(flash, phy_addr, prog_size, b);
+    		LL_GPIO_SetOutputPin(LED2_GPIO_Port, LED2_Pin);
+    		if((offset % flash->chip.erase_gran) == 0){
+    			sfud_erase(flash, offset, flash->chip.erase_gran);
+    		}
+    		sfud_write(flash, offset, prog_size, b);
+    		LL_GPIO_ResetOutputPin(LED2_GPIO_Port, LED2_Pin);
     	}
     }
     
@@ -432,12 +437,15 @@ bool fat32_write(const uint8_t *b, uint32_t addr)
 
 bool fat32_init(void)
 {
+	uint8_t buf[512];
 
     image_addr_range.begin = 0x292200;
     image_addr_range.end = 0x292200 + APP_SIZE;
 
 	if(sfud_init() == SFUD_SUCCESS){
 		flash = sfud_get_device_table();
+
+		LL_GPIO_SetOutputPin(LED1_GPIO_Port, LED1_Pin);
 	}
 
     return true;

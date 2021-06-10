@@ -62,6 +62,12 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
   LL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
+  /**/
+  GPIO_InitStruct.Pin = BOOT_KEY_Pin;
+  GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
+  LL_GPIO_Init(BOOT_KEY_GPIO_Port, &GPIO_InitStruct);
+
 }
 
 /* USER CODE BEGIN 2 */

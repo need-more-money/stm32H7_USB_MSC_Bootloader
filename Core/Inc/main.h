@@ -73,6 +73,8 @@ void Error_Handler(void);
 #define LED2_GPIO_Port GPIOE
 #define LED3_Pin LL_GPIO_PIN_5
 #define LED3_GPIO_Port GPIOE
+#define BOOT_KEY_Pin LL_GPIO_PIN_12
+#define BOOT_KEY_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

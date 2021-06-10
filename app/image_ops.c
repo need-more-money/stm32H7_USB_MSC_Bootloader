@@ -7,6 +7,7 @@
 #include <string.h>
 #include "main.h"
 #include "quadspi.h"
+#include "gpio.h"
 #include "usb_device.h"
 #include "mbedtls/sha256.h"
 //#include "mbedtls/pk.h"
@@ -58,10 +59,13 @@ int self_check(void)
 	int image_size = (uint32_t)&__m_text_size + (uint32_t)&__m_data_size;
 	uint8_t sha256_hash[32];
 	void *p = &__m_text_start;
-
+	uint8_t *sha256 = (void *)((uint32_t)p + image_size);
 	// check self image
 	mbedtls_sha256_ret(p, image_size, sha256_hash, 0);
-
+	if(memcmp(sha256_hash, sha256, sizeof(sha256_hash))){
+		printf("sha256 error...\n");
+		return 0;
+	}
 
 	return 1;
 }
@@ -73,16 +77,17 @@ static void QSPI_EnableMapped(void)
 
 	/* Configure the command for the read instruction */
 	s_command.InstructionMode = QSPI_INSTRUCTION_1_LINE;
-	s_command.Instruction = 0xEB;
 	s_command.AddressMode = QSPI_ADDRESS_4_LINES;
 	s_command.AddressSize = QSPI_ADDRESS_24_BITS;
+	s_command.DataMode = QSPI_DATA_4_LINES;
 	s_command.AlternateByteMode = QSPI_ALTERNATE_BYTES_4_LINES;
 	s_command.AlternateBytesSize = QSPI_ALTERNATE_BYTES_8_BITS;
-	s_command.DataMode = QSPI_DATA_4_LINES;
-	s_command.DummyCycles = 4;
+	s_command.AlternateBytes = 0xFF;
 	s_command.DdrMode = QSPI_DDR_MODE_DISABLE;
 	s_command.DdrHoldHalfCycle = QSPI_DDR_HHC_ANALOG_DELAY;
 	s_command.SIOOMode = QSPI_SIOO_INST_EVERY_CMD;
+	s_command.Instruction = 0xEB;
+	s_command.DummyCycles = 4;
 
 	/* Configure the memory mapped mode */
 	s_mem_mapped_cfg.TimeOutActivation = QSPI_TIMEOUT_COUNTER_DISABLE;
@@ -134,9 +139,11 @@ void boot(uint32_t imgStart);
 void doBoot(void)
 {
 	if(self_check()){
-		void *start = isImageBootable();
-		if(start != (void *)-1){
-			boot((uint32_t)start);
+		if(LL_GPIO_IsInputPinSet(BOOT_KEY_GPIO_Port, BOOT_KEY_Pin)){
+			void *start = isImageBootable();
+			if(start != (void *)-1){
+				boot((uint32_t)start);
+			}
 		}
 
 		MX_USB_DEVICE_Init();

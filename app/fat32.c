@@ -113,6 +113,7 @@ typedef struct
 {
     uint32_t begin;
     uint32_t end;
+    int32_t image_size;
     uint32_t type;
 }fat32_range_t;
 
@@ -326,6 +327,10 @@ static bool _fat32_write_firmware(const uint8_t *b, uint32_t addr)
     		}
     		sfud_write(flash, offset, prog_size, b);
     		LL_GPIO_ResetOutputPin(LED2_GPIO_Port, LED2_Pin);
+    		image_addr_range.image_size -= prog_size;
+    		if(image_addr_range.image_size <= 0){
+    			LL_GPIO_SetOutputPin(LED3_GPIO_Port, LED3_Pin);
+    		}
     	}
     }
     
@@ -403,12 +408,14 @@ bool fat32_write(const uint8_t *b, uint32_t addr)
 
             	image_addr_range.begin = ((clus-2) + (FAT32_BPB_RsvdSecCnt + FAT32_BPB_FATSz32*2 ) ) * FAT32_SECTOR_SIZE;
             	image_addr_range.end = image_addr_range.begin + MIN(entry->DIR_FileSize, APP_SIZE);
+            	image_addr_range.image_size = MIN(entry->DIR_FileSize, APP_SIZE);
 
             	image_addr_range.type = FW_TYPE_BIN;
 //            	printf("FIRMWARE [%.11s] -> %08X\n",entry->DIR_Name,image_addr_range.begin);
             }else if(!memcmp((void*) &entry->DIR_Name[8], "DAT", 3)){
             	image_addr_range.begin = ((clus-2) + (FAT32_BPB_RsvdSecCnt + FAT32_BPB_FATSz32*2 ) ) * FAT32_SECTOR_SIZE;
             	image_addr_range.end = image_addr_range.begin + MIN(entry->DIR_FileSize, APP_SIZE);
+            	image_addr_range.image_size = MIN(entry->DIR_FileSize, APP_SIZE);
 
             	image_addr_range.type = FW_TYPE_DATA;
 //            	printf("DATA [%.11s] -> %08X\n",entry->DIR_Name,image_addr_range.begin);
@@ -430,6 +437,7 @@ bool fat32_write(const uint8_t *b, uint32_t addr)
     else
     {
         volatile uint8_t halt = 1;
+
     }
     
     return true;

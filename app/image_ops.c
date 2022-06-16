@@ -31,7 +31,7 @@ typedef struct{
 	};
 }file_header_t;
 
-mbedtls_sha256_context sha256;
+//mbedtls_sha256_context sha256;
 
 //
 //void flash_erase_all(void)
@@ -63,7 +63,7 @@ int self_check(void)
 	// check self image
 	mbedtls_sha256_ret(p, image_size, sha256_hash, 0);
 	if(memcmp(sha256_hash, sha256, sizeof(sha256_hash))){
-		printf("sha256 error...\n");
+//		printf("sha256 error...\n");
 		return 0;
 	}
 
@@ -145,6 +145,13 @@ void doBoot(void)
 				boot((uint32_t)start);
 			}
 		}
+
+		LL_GPIO_SetOutputPin(USBHS_RST_GPIO_Port, USBHS_RST_Pin);
+//		LL_GPIO_WritePin(USBHS_RST_GPIO_Port, USBHS_RST_Pin, GPIO_PIN_SET);
+		HAL_Delay(100);
+		LL_GPIO_ResetOutputPin(USBHS_RST_GPIO_Port, USBHS_RST_Pin);
+//		HAL_GPIO_WritePin(USBHS_RST_GPIO_Port, USBHS_RST_Pin, GPIO_PIN_RESET);
+		HAL_Delay(100);
 
 		MX_USB_DEVICE_Init();
 	}

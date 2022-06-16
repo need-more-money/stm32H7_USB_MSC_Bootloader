@@ -76,7 +76,8 @@ void Error_Handler(void);
 #define BOOT_KEY_Pin LL_GPIO_PIN_12
 #define BOOT_KEY_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */
-
+#define USBHS_RST_Pin GPIO_PIN_2
+#define USBHS_RST_GPIO_Port GPIOA
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

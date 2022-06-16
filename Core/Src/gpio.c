@@ -51,6 +51,8 @@ void MX_GPIO_Init(void)
   LL_AHB4_GRP1_EnableClock(LL_AHB4_GRP1_PERIPH_GPIOB);
   LL_AHB4_GRP1_EnableClock(LL_AHB4_GRP1_PERIPH_GPIOD);
 
+  LL_GPIO_ResetOutputPin(USBHS_RST_GPIO_Port, USBHS_RST_Pin);
+
   /**/
   LL_GPIO_ResetOutputPin(GPIOE, LED1_Pin|LED2_Pin|LED3_Pin);
 
@@ -67,6 +69,13 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
   LL_GPIO_Init(BOOT_KEY_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PtPin */
+  GPIO_InitStruct.Pin = USBHS_RST_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  LL_GPIO_Init(USBHS_RST_GPIO_Port, &GPIO_InitStruct);
 
 }
 

@@ -29,7 +29,7 @@
 #include <stdarg.h>
 #include "../Inc/sfud.h"
 #include "main.h"
-#include "quadspi.h"
+#include "octospi.h"
 
 static char log_buf[256];
 void sfud_log_info(const char *format, ...);
@@ -37,7 +37,7 @@ sfud_err qspi_send_then_recv(const void *send_buf, size_t send_length, void *rec
 void sfud_log_debug(const char *file, const long line, const char *format, ...);
 
 typedef struct {
-	QSPI_HandleTypeDef *spix;
+	OSPI_HandleTypeDef *spix;
     GPIO_TypeDef *cs_gpiox;
     uint32_t cs_gpio_pin;
 } spi_user_data, *spi_user_data_t;
@@ -169,7 +169,7 @@ static void retry_delay(void)
     while (delay--);
 }
 
-static const spi_user_data qspi1 = { .spix = &hqspi};
+static const spi_user_data qspi1 = { .spix = &hospi1};
 sfud_err sfud_spi_port_init(sfud_flash *flash) {
     sfud_err result = SFUD_SUCCESS;
 
@@ -229,14 +229,14 @@ sfud_err qspi_send_then_recv(const void *send_buf, size_t send_length, void *rec
     assert_param(recv_buf);
     assert_param(send_length != 0);
 
-    QSPI_CommandTypeDef Cmdhandler;
+    OSPI_RegularCmdTypeDef Cmdhandler;
     unsigned char *ptr = (unsigned char *)send_buf;
     size_t count = 0;
     sfud_err result = SFUD_SUCCESS;
 
     /* get instruction */
     Cmdhandler.Instruction = ptr[0];
-    Cmdhandler.InstructionMode = QSPI_INSTRUCTION_1_LINE;
+    Cmdhandler.InstructionMode = HAL_OSPI_INSTRUCTION_1_LINE;
     count++;
 
     /* get address */
@@ -246,31 +246,31 @@ sfud_err qspi_send_then_recv(const void *send_buf, size_t send_length, void *rec
         {
             /* address size is 3 Byte */
             Cmdhandler.Address = (ptr[1] << 16) | (ptr[2] << 8) | (ptr[3]);
-            Cmdhandler.AddressSize = QSPI_ADDRESS_24_BITS;
+            Cmdhandler.AddressSize = HAL_OSPI_ADDRESS_24_BITS;
             count += 3;
         }
         else
         {
             return SFUD_ERR_READ;
         }
-        Cmdhandler.AddressMode = QSPI_ADDRESS_1_LINE;
+        Cmdhandler.AddressMode = HAL_OSPI_ADDRESS_1_LINE;
     }
     else
     {
         /* no address stage */
         Cmdhandler.Address = 0 ;
-        Cmdhandler.AddressMode = QSPI_ADDRESS_NONE;
+        Cmdhandler.AddressMode = HAL_OSPI_ADDRESS_NONE;
         Cmdhandler.AddressSize = 0;
     }
 
     Cmdhandler.AlternateBytes = 0;
-    Cmdhandler.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+    Cmdhandler.AlternateBytesMode = HAL_OSPI_ALTERNATE_BYTES_NONE;
     Cmdhandler.AlternateBytesSize = 0;
 
-    Cmdhandler.SIOOMode = QSPI_SIOO_INST_EVERY_CMD;
-    Cmdhandler.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
-    Cmdhandler.DdrMode = QSPI_DDR_MODE_DISABLE;
-    Cmdhandler.DdrHoldHalfCycle = QSPI_DDR_HHC_ANALOG_DELAY;
+    Cmdhandler.SIOOMode = HAL_OSPI_SIOO_INST_EVERY_CMD;
+    Cmdhandler.AlternateBytesMode = HAL_OSPI_ALTERNATE_BYTES_NONE;
+    Cmdhandler.DataDtrMode = HAL_OSPI_DATA_DTR_DISABLE;
+//    Cmdhandler.DdrHoldHalfCycle = HAL_OSPI_DDR_HHC_ANALOG_DELAY;
 
     if (send_buf && recv_buf)
     {
@@ -286,16 +286,16 @@ sfud_err qspi_send_then_recv(const void *send_buf, size_t send_length, void *rec
         }
 
         /* set recv size */
-        Cmdhandler.DataMode = QSPI_DATA_1_LINE;
+        Cmdhandler.DataMode = HAL_OSPI_DATA_1_LINE;
         Cmdhandler.NbData = recv_length;
-        HAL_QSPI_Command(&hqspi, &Cmdhandler, 5000);
+        HAL_OSPI_Command(&hospi1, &Cmdhandler, 5000);
 
         if (recv_length != 0)
         {
-            if (HAL_QSPI_Receive(&hqspi, recv_buf, 5000) != HAL_OK)
+            if (HAL_OSPI_Receive(&hospi1, recv_buf, 5000) != HAL_OK)
             {
-                sfud_log_info("qspi recv data failed(%d)!", hqspi.ErrorCode);
-                hqspi.State = HAL_QSPI_STATE_READY;
+                sfud_log_info("qspi recv data failed(%d)!", hospi1.ErrorCode);
+                hospi1.State = HAL_OSPI_STATE_READY;
                 result = SFUD_ERR_READ;
             }
         }
@@ -311,23 +311,23 @@ sfud_err qspi_send_then_recv(const void *send_buf, size_t send_length, void *rec
         /* determine if there is data to send */
         if (send_length - count > 0)
         {
-            Cmdhandler.DataMode = QSPI_DATA_1_LINE;
+            Cmdhandler.DataMode = HAL_OSPI_DATA_1_LINE;
         }
         else
         {
-            Cmdhandler.DataMode = QSPI_DATA_NONE;
+            Cmdhandler.DataMode = HAL_OSPI_DATA_NONE;
         }
 
         /* set send buf and send size */
         Cmdhandler.NbData = send_length - count;
-        HAL_QSPI_Command(&hqspi, &Cmdhandler, 5000);
+        HAL_OSPI_Command(&hospi1, &Cmdhandler, 5000);
 
         if (send_length - count > 0)
         {
-            if (HAL_QSPI_Transmit(&hqspi, (uint8_t *)(ptr + count), 5000) != HAL_OK)
+            if (HAL_OSPI_Transmit(&hospi1, (uint8_t *)(ptr + count), 5000) != HAL_OK)
             {
-                sfud_log_info("qspi send data failed(%d)!", hqspi.ErrorCode);
-                hqspi.State = HAL_QSPI_STATE_READY;
+                sfud_log_info("qspi send data failed(%d)!", hospi1.ErrorCode);
+                hospi1.State = HAL_OSPI_STATE_READY;
                 result = SFUD_ERR_WRITE;
             }
         }

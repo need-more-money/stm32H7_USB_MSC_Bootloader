@@ -2,20 +2,16 @@
   ******************************************************************************
   * @file    stm32h7xx_ll_rcc.h
   * @author  MCD Application Team
-  * @version $VERSION$
-  * @date    $DATE$
   * @brief   Header file of RCC LL module.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2017 STMicroelectronics.
-  * All rights reserved.</center></h2>
+  * Copyright (c) 2017 STMicroelectronics.
+  * All rights reserved.
   *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
+  * This software is licensed under terms that can be found in the LICENSE file in
+  * the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   ******************************************************************************
   */
 
@@ -64,13 +60,13 @@ extern const uint8_t LL_RCC_PrescTable[16];
    --------------------------------------------------------*/
 
 #if defined(RCC_VER_2_0)
-/* Clock source register offset Vs CDCCIPR regsiter */
+/* Clock source register offset Vs CDCCIPR register */
 #define CDCCIP    0x0UL
 #define CDCCIP1   0x4UL
 #define CDCCIP2   0x8UL
 #define SRDCCIP   0xCUL
 #else
-/* Clock source register offset Vs D1CCIPR regsiter */
+/* Clock source register offset Vs D1CCIPR register */
 #define D1CCIP    0x0UL
 #define D2CCIP1   0x4UL
 #define D2CCIP2   0x8UL
@@ -4594,7 +4590,9 @@ __STATIC_INLINE void LL_RCC_PLL1_SetM(uint32_t M)
   * @brief  Set PLL1 P Coefficient
   * @note   This API shall be called only when PLL1 is disabled.
   * @rmtoll PLL1DIVR        P1          LL_RCC_PLL1_SetP
-  * @param  P parameter can be a value between 2 and 128 (ODD division factor not supportted)
+  * @param  P parameter can be a value between 2 (or 1*) and 128 (ODD division factor not supported)
+  *
+  * (*) : For stm32h72xxx and stm32h73xxx family lines.
   */
 __STATIC_INLINE void LL_RCC_PLL1_SetP(uint32_t P)
 {
@@ -6407,4 +6405,3 @@ uint32_t    LL_RCC_GetCLKPClockFreq(uint32_t CLKPxSource);
 
 #endif /* STM32H7xx_LL_RCC_H */
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
